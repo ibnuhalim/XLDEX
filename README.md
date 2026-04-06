@@ -2,8 +2,12 @@
 
 <p align="center">
   <img src="https://raw.githubusercontent.com/github/explore/main/topics/linux/linux.png" width="80"><br>
-  <img src="https://img.shields.io/badge/VPN-XD%20TOOLS-blue?style=flat-square">
-  <img src="https://img.shields.io/badge/OS-Debian%20%7C%20Ubuntu-green?style=flat-square">
+  <img src="https://img.shields.io/badge/XD-TOOLS-blue?style=flat-square">
+  <img src="https://img.shields.io/badge/VPN-Installer-green?style=flat-square">
+</p>
+
+<p align="center">
+  <img src="https://media.giphy.com/media/hvRJCLFzcasrR4ia7z/giphy.gif" width="120">
 </p>
 
 ---
@@ -37,20 +41,19 @@ ATTACK MODE : OFF
 
 ## 📊 SERVICES
 ```
-SSH / UDP / DROPBEAR
-OPENVPN TCP / UDP / SSL / WS
-OHP SSH / DROPBEAR / OVPN
-XRAY VMESS / VLESS / TROJAN / SS
-BADVPN 7100 / 7200 / 7300
-NGINX / HAPROXY / CRON
-IPTABLES / AUTOREBOOT
+✔ SSH
+✔ SSH UDP
+✔ OpenVPN
+✔ ZIVPN UDP
+✔ NoobzVPN
+✔ Xray (Vmess / Vless / Trojan / Shadowsocks)
 ```
 
 ---
 
 ## 📱 PANEL
 <p align="center">
-  <img src="https://media.giphy.com/media/L8K62iTDkzGX6/giphy.gif" width="250">
+  <img src="https://media.giphy.com/media/qgQUggAC3Pfv687qPC/giphy.gif" width="260">
 </p>
 
 ---

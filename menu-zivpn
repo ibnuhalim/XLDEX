@@ -1,0 +1,175 @@
+#!/bin/bash
+# =====================================================
+# ZiVPN UDP Menu - User Management
+# AutoFTbot Edition
+# =====================================================
+
+export LC_ALL='en_US.UTF-8'
+export LANG='en_US.UTF-8'
+export LANGUAGE='en_US.UTF-8'
+export LC_CTYPE='en_US.utf8'
+
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[0;33m'
+CY='\033[0;36m'
+NC='\033[0m'
+BOLD='\e[1m'
+
+function garis() { echo -e "${CY}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"; }
+
+CONFIG="/etc/zivpn/config.json"
+META="/etc/zivpn/meta.json"
+
+update_config_user() {
+    jq --arg u "$1" --arg p "$2" '.users[$u] = $p' "$CONFIG" > "$CONFIG.tmp" && mv "$CONFIG.tmp" "$CONFIG"
+}
+remove_config_user() {
+    jq "del(.users[\"$1\"])" "$CONFIG" > "$CONFIG.tmp" && mv "$CONFIG.tmp" "$CONFIG"
+}
+update_meta() {
+    jq --arg u "$1" --arg f "$2" --arg v "$3" '.[$u][$f] = $v' "$META" > "$META.tmp" && mv "$META.tmp" "$META"
+}
+get_meta() {
+    jq -r ".[\"$1\"][\"$2\"] // \"null\"" "$META"
+}
+delete_meta() {
+    jq "del(.[\"$1\"])" "$META" > "$META.tmp" && mv "$META.tmp" "$META"
+}
+restart_zivpn() { systemctl restart zivpn; }
+
+function create() {
+    clear; garis
+    echo -e "${GREEN}| \E[44;1;39m      °ZIVPN CREATE ACCOUNT°            \E[0m|"
+    garis
+    read -p "Username : " user
+    [[ -z "$user" ]] && { echo "Username cannot empty!"; sleep 2; create; return; }
+    jq -e ".users.\"$user\"" "$CONFIG" >/dev/null && { echo -e "${RED}User exists!${NC}"; sleep 2; create; return; }
+    read -p "Password : " pass
+    read -p "Expired (days, 0 for unlimited) : " exp
+    read -p "IP Limit : " ip
+    update_config_user "$user" "$pass"
+    update_meta "$user" "expired" "$exp"
+    update_meta "$user" "iplimit" "$ip"
+    update_meta "$user" "blocked" "false"
+    update_meta "$user" "created" "$(date +%Y-%m-%d)"
+    update_meta "$user" "password" "$pass"
+    restart_zivpn
+    clear; garis
+    echo -e "${CY}| \E[44;1;39m      °ZIVPN ACCOUNT CREATED°            \E[0m|"
+    garis
+    echo -e "Username   : $user"
+    echo -e "Password   : $pass"
+    echo -e "IP Limit   : $ip"
+    echo -e "Expired    : $exp days"
+    echo -e "Server     : $(curl -s ipv4.icanhazip.com)"
+    echo -e "Port       : 5667 (UDP)"
+    garis
+    read -p "Press enter to continue..."
+    menu-zivpn
+}
+
+function delete() {
+    clear; garis
+    echo -e "${GREEN}| \E[44;1;39m      °ZIVPN DELETE ACCOUNT°            \E[0m|"
+    garis
+    read -p "Username : " user
+    jq -e ".users.\"$user\"" "$CONFIG" >/dev/null || { echo -e "${RED}User not found!${NC}"; sleep 2; delete; return; }
+    remove_config_user "$user"
+    delete_meta "$user"
+    restart_zivpn
+    echo -e "${GREEN}User $user deleted.${NC}"; sleep 2; menu-zivpn
+}
+
+function renew() {
+    clear; garis
+    echo -e "${GREEN}| \E[44;1;39m      °ZIVPN RENEW ACCOUNT°            \E[0m|"
+    garis
+    read -p "Username : " user
+    jq -e ".users.\"$user\"" "$CONFIG" >/dev/null || { echo -e "${RED}User not found!${NC}"; sleep 2; renew; return; }
+    read -p "Add days (0 for unlimited) : " add_days
+    cur_exp=$(get_meta "$user" "expired")
+    [[ "$cur_exp" == "null" || "$cur_exp" == "0" ]] && new_exp="$add_days" || new_exp=$((cur_exp + add_days))
+    update_meta "$user" "expired" "$new_exp"
+    echo -e "${GREEN}Expired updated to $new_exp days${NC}"; sleep 2; menu-zivpn
+}
+
+function lock() {
+    clear; garis
+    echo -e "${GREEN}| \E[44;1;39m      °ZIVPN LOCK ACCOUNT°            \E[0m|"
+    garis
+    read -p "Username : " user
+    jq -e ".users.\"$user\"" "$CONFIG" >/dev/null || { echo -e "${RED}User not found!${NC}"; sleep 2; lock; return; }
+    update_meta "$user" "blocked" "true"
+    remove_config_user "$user"
+    restart_zivpn
+    echo -e "${GREEN}User $user locked.${NC}"; sleep 2; menu-zivpn
+}
+
+function unlock() {
+    clear; garis
+    echo -e "${GREEN}| \E[44;1;39m      °ZIVPN UNLOCK ACCOUNT°            \E[0m|"
+    garis
+    read -p "Username : " user
+    [[ "$(get_meta "$user" "blocked")" != "true" ]] && { echo -e "${RED}User not locked or not exist!${NC}"; sleep 2; unlock; return; }
+    pass=$(get_meta "$user" "password")
+    [[ "$pass" == "null" ]] && { echo -e "${RED}Missing password.${NC}"; sleep 2; menu-zivpn; return; }
+    update_config_user "$user" "$pass"
+    update_meta "$user" "blocked" "false"
+    restart_zivpn
+    echo -e "${GREEN}User $user unlocked.${NC}"; sleep 2; menu-zivpn
+}
+
+function show() {
+    clear; garis
+    echo -e "${GREEN}| \E[44;1;39m      °ZIVPN ALL ACCOUNTS°            \E[0m|"
+    garis
+    printf "%-15s %-10s %-10s %-10s %-10s\n" "Username" "Password" "Exp(Days)" "IP Limit" "Status"
+    for user in $(jq -r '.users | keys[]' "$CONFIG" 2>/dev/null); do
+        pass=$(jq -r ".users[\"$user\"]" "$CONFIG")
+        exp=$(get_meta "$user" "expired")
+        iplimit=$(get_meta "$user" "iplimit")
+        blocked=$(get_meta "$user" "blocked")
+        [[ "$blocked" == "true" ]] && status="${RED}LOCKED${NC}" || status="${GREEN}ACTIVE${NC}"
+        printf "%-15s %-10s %-10s %-10s %b\n" "$user" "$pass" "$exp" "$iplimit" "$status"
+    done
+    garis; read -p "Press enter to continue..."; menu-zivpn
+}
+
+function remove_all() {
+    clear; garis
+    echo -e "${RED}⚠️  WARNING: This will delete ALL users! ⚠️${NC}"
+    garis
+    read -p "Type 'YES' to confirm: " confirm
+    [[ "$confirm" != "YES" ]] && { echo "Aborted."; sleep 2; menu-zivpn; return; }
+    jq '.users = {}' "$CONFIG" > "$CONFIG.tmp" && mv "$CONFIG.tmp" "$CONFIG"
+    echo "{}" > "$META"
+    restart_zivpn
+    echo -e "${GREEN}All users removed.${NC}"; sleep 2; menu-zivpn
+}
+
+# Main menu
+clear; garis
+echo -e "${GREEN}| \E[44;1;39m         ZIVPN UDP MANAGER v1.0           \E[0m|"
+garis
+echo -e "${CY}1${NC}. Create Account"
+echo -e "${CY}2${NC}. Delete Account"
+echo -e "${CY}3${NC}. Renew Account"
+echo -e "${CY}4${NC}. Lock Account"
+echo -e "${CY}5${NC}. Unlock Account"
+echo -e "${CY}6${NC}. Show All Users"
+echo -e "${CY}7${NC}. Remove All Users"
+echo -e "${CY}0${NC}. Exit"
+garis
+read -p "Select menu : " opt
+case $opt in
+    1) create ;;
+    2) delete ;;
+    3) renew ;;
+    4) lock ;;
+    5) unlock ;;
+    6) show ;;
+    7) remove_all ;;
+    0) exit 0 ;;
+    *) menu-zivpn ;;
+esac

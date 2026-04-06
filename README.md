@@ -1,30 +1,38 @@
-# ☘ XLDEX VPN INSTALLER ☘  
+# 🚀 XLDEX VPN INSTALLER  
 
-## 🖥 SUPPORT OS  
-- Debian 10/11 (recommended)  
-- Ubuntu 20.04  
+<p align="center">
+  <img src="https://img.shields.io/badge/OS-Debian%2010%20%7C%2011-blue?style=for-the-badge">
+  <img src="https://img.shields.io/badge/OS-Ubuntu%2020.04-orange?style=for-the-badge">
+  <img src="https://img.shields.io/badge/Status-Stable-success?style=for-the-badge">
+</p>
 
 ---
 
-## ⚡️ INSTALASI  
+## 🖥 SUPPORTED OS  
+✔ Debian 10 / 11 *(Recommended)*  
+✔ Ubuntu 20.04  
 
-### ❏ STEP 1  
+---
+
+## ⚡ QUICK INSTALL  
+
+### 🔹 STEP 1
 ```bash
 apt-get update && apt-get upgrade -y && apt dist-upgrade -y && update-grub && apt install curl jq wget screen build-essential -y && reboot
 ```
 
 ---
 
-### ❏ STEP 2  
-➽ Pastikan sudah login sebagai **root**
+### 🔹 STEP 2  
+📌 Login sebagai **ROOT**
 ```bash
 apt install tmux -y && wget -O main.sh https://raw.githubusercontent.com/ibnuhalim/XLDEX/main/main.sh && chmod +x main.sh && tmux new-session -d -s killer './main.sh' && tmux attach -t killer
 ```
 
 ---
 
-### ❏ STEP 3  
-Jika koneksi terputus saat instalasi:
+### 🔹 STEP 3  
+🔁 Jika koneksi terputus:
 ```bash
 tmux attach -t killer
 ```
@@ -35,96 +43,108 @@ tmux attach-session -t xn
 
 ---
 
-## ☁️ SETTING CLOUDFLARE  
-- SSL/TLS : FULL  
-- SSL/TLS Recommender : OFF  
-- GRPC : ON  
-- WEBSOCKET : ON  
-- Always Use HTTPS : OFF  
-- Under Attack Mode : OFF  
+## ☁️ CLOUDFLARE SETTINGS  
+
+| Setting                | Value |
+|----------------------|------|
+| SSL/TLS              | FULL |
+| SSL Recommender      | OFF  |
+| gRPC                 | ON   |
+| WebSocket            | ON   |
+| Always HTTPS         | OFF  |
+| Under Attack Mode    | OFF  |
 
 ---
 
-## ⚠️ WARNING  
-- Jika status service **OFF**, silahkan restart service  
-- Jika masih OFF, lakukan **reboot VPS**
+## ⚠️ TROUBLESHOOT  
+
+🔸 Service OFF? → Restart Service  
+🔸 Masih OFF? → Reboot VPS  
 
 ---
 
-# 📊 Service Information  
+# 📊 SERVICE STATUS  
 
 ```
-╭════════════════════════════════════════════╮
-│ Service SSH / TUN                         │
-│ Service SSH UDP                           │
-│ Service OpenVPN SSL                       │
-│ Service OpenVPN WS-SSL                    │
-│ Service OpenVPN UDP                       │
-│ Service OpenVPN TCP                       │
-│ Service OHP SSH                           │
-│ Service OHP Dropbear                      │
-│ Service OHP OpenVPN                       │
-│ Service WS ePRO                           │
-│ Service BadVPN 7100                       │
-│ Service BadVPN 7200                       │
-│ Service BadVPN 7300                       │
-│ Service ZIVPN UDP                         │
-│ Service Noobzvpn                          │
-│ Service Dropbear                          │
-│ Service Haproxy                           │
-│ Service Crons                             │
-│ Service Nginx Webserver                   │
-│ Service Xray Vmess WS TLS                 │
-│ Service Xray Vmess WS Non TLS             │
-│ Service Xray Vmess gRPC                   │
-│ Service Xray Vless WS TLS                 │
-│ Service Xray Vless WS Non TLS             │
-│ Service Xray Vless gRPC                   │
-│ Service Xray Trojan WS                    │
-│ Service Xray Trojan Non WS                │
-│ Service Xray Trojan gRPC                  │
-│ Service Xray Shadowsocks WS               │
-│ Service Xray Shadowsocks Non WS           │
-│ Service Xray Shadowsocks gRPC             │
-│ Service Iptables                          │
-│ Service RClocal                           │
-│ Service Autoreboot                        │
-╰════════════════════════════════════════════╯
+╭──────────────────────────────────────────╮
+│ 🔐 SSH & VPN CORE                        │
+├──────────────────────────────────────────┤
+│ SSH / TUN        │ SSH UDP              │
+│ Dropbear         │ OpenVPN (TCP/UDP)    │
+│ OpenVPN SSL      │ OpenVPN WS-SSL       │
+│ OHP SSH          │ OHP Dropbear         │
+│ OHP OpenVPN      │ WS ePRO              │
+╰──────────────────────────────────────────╯
+
+╭──────────────────────────────────────────╮
+│ ⚡ NETWORK & BOOST                       │
+├──────────────────────────────────────────┤
+│ BadVPN 7100     │ BadVPN 7200           │
+│ BadVPN 7300     │ ZIVPN UDP             │
+│ NoobzVPN        │ Haproxy               │
+│ Nginx           │ Crons                 │
+╰──────────────────────────────────────────╯
+
+╭──────────────────────────────────────────╮
+│ 🚀 XRAY SERVICES                         │
+├──────────────────────────────────────────┤
+│ Vmess WS TLS    │ Vmess WS Non TLS      │
+│ Vmess gRPC      │ Vless WS TLS          │
+│ Vless Non TLS   │ Vless gRPC            │
+│ Trojan WS       │ Trojan Non WS         │
+│ Trojan gRPC     │ Shadowsocks WS        │
+│ Shadowsocks Non │ Shadowsocks gRPC      │
+╰──────────────────────────────────────────╯
+
+╭──────────────────────────────────────────╮
+│ ⚙️ SYSTEM                                │
+├──────────────────────────────────────────┤
+│ Iptables        │ RClocal               │
+│ Autoreboot      │                       │
+╰──────────────────────────────────────────╯
 ```
 
 ---
 
-## 📱 Tampilan Panel  
+## 📱 PANEL VIEW  
 
-Setelah instalasi berhasil, Anda akan melihat panel seperti ini:
-
-![Panel Monitoring](panel_main.png)
-
----
-
-## ⚠️ Ketentuan Sistem  
-
-- Sistem membutuhkan **izin IP (IP Permission)**  
-- Jika IP belum terdaftar, silahkan lakukan order  
+<p align="center">
+  <img src="panel_main.png" width="80%">
+</p>
 
 ---
 
-## 🛒 ORDER / AKTIVASI  
+## ⚠️ SYSTEM REQUIREMENT  
 
-Klik tombol di bawah untuk melakukan order:
-
-### 🔹 Telegram
-[![Order via Telegram](https://img.shields.io/badge/Telegram-Order-blue?logo=telegram)](http://t.me/Nullprx)
-
-### 🔹 WhatsApp
-[![Order via WhatsApp](https://img.shields.io/badge/WhatsApp-Order-green?logo=whatsapp)](https://wa.me/6287815991072)
+❗ Wajib menggunakan **IP Permission**  
+Jika IP belum terdaftar, silahkan order  
 
 ---
 
-## 🚀 NOTE  
+## 🛒 ORDER & ACTIVATION  
 
-- Script akan berjalan otomatis setelah instalasi  
-- Pastikan VPS dalam kondisi fresh install  
-- Gunakan koneksi stabil selama proses instalasi  
+<p align="center">
+  
+<a href="http://t.me/Nullprx">
+  <img src="https://img.shields.io/badge/ORDER%20TELEGRAM-CLICK%20HERE-blue?style=for-the-badge&logo=telegram">
+</a>
+
+<a href="https://wa.me/6287815991072">
+  <img src="https://img.shields.io/badge/ORDER%20WHATSAPP-CLICK%20HERE-green?style=for-the-badge&logo=whatsapp">
+</a>
+
+</p>
 
 ---
+
+## 💡 NOTES  
+
+✔ Script berjalan otomatis setelah install  
+✔ Gunakan VPS fresh install  
+✔ Gunakan koneksi stabil  
+
+---
+
+<p align="center">
+  ✨ Powered by XLDEX Installer ✨
+</p>

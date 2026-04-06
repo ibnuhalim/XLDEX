@@ -46,8 +46,39 @@ ATTACK MODE : OFF
 ✔ OpenVPN
 ✔ ZIVPN UDP
 ✔ NoobzVPN
+✔ SlowDNS
 ✔ Xray (Vmess / Vless / Trojan / Shadowsocks)
 ```
+
+---
+
+## 💰 HARGA SEWA
+<p align="center">
+  <img src="https://media.giphy.com/media/3o7TKtnuHOHHUjR38Y/giphy.gif" width="200">
+</p>
+
+```
+✔ 1 Bulan   : 5K
+✔ 2 Bulan   : 9K
+✔ 3 Bulan   : 13K
+✔ 6 Bulan   : 25K
+✔ 12 Bulan  : 45K
+```
+
+💬 Harga bisa nego / custom → **PM Owner**
+
+---
+
+## 🌐 READY OPEN SOURCE
+<p align="center">
+  <img src="https://media.giphy.com/media/ZVik7pBtu9dNS/giphy.gif" width="200">
+</p>
+
+```
+✔ Script tersedia versi Open Source
+```
+
+📩 Minat source? → **PM Owner**
 
 ---
 
@@ -77,7 +108,3 @@ ATTACK MODE : OFF
 </p>
 
 ---
-
-<p align="center">
-⚡ XD TOOLS ⚡
-</p>

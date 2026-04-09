@@ -1,108 +1,94 @@
 #!/bin/bash
-# Zivpn UDP Module installer - Minimal version (only install)
-
-NIC=$(ip -4 route ls | grep default | grep -Po '(?<=dev )(\S+)' | head -1)
-Sysctl="/etc/sysctl.conf"
-FileSys="/etc/systemd/system/zivpn.service"
-Dir="/etc/zivpn"
-FileBackup="/root/config.json.zivpn"
-MACHINE=
-
-# GANTI DENGAN RAW URL MENU ANDA
-MENU_URL="https://raw.githubusercontent.com/EnzoXZodix/ZIKIR/main/zivpn-menu"
+# =============================================
+# Zivpn UDP Installer - Silent Auto Domain
+# Domain diambil dari /etc/xray/domain
+# =============================================
 
 # Warna
 GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+CYAN='\033[0;36m'
+RED='\033[0;31m'
+GRAY='\033[1;30m'
 NC='\033[0m'
+BOLD='\033[1m'
 
-MsgNotInstalled() {
-  echo
-  echo -e "➜ ZIVPN UDP Tidak Terpasang"
-  echo
+# Fungsi run_silent
+run_silent() {
+    local msg="$1"
+    local cmd="$2"
+    local log_file="/tmp/zivpn_install.log"
+    
+    echo -ne "${GRAY}•${NC} $msg... "
+    bash -c "$cmd" &>> "$log_file"
+    if [ $? -eq 0 ]; then
+        echo -e "\r${GREEN}✓${NC} $msg"
+    else
+        echo -e "\r${RED}✗${NC} $msg (Check $log_file)"
+        exit 1
+    fi
 }
 
-MsgUninstall() {
-  echo
-  echo -e "➜ ZIVPN UDP Berhasil dibersihkan"
-  echo
-}
+# Cek root
+if [ $EUID -ne 0 ]; then
+    echo -e "${RED}Error: This script must be run as root${NC}"
+    exit 1
+fi
 
-MsgFileBackup() {
-  echo
-  echo -e "➜ File Backup: $FileBackup"
-  echo
-}
+clear
+echo -e "${BOLD}ZiVPN UDP Installer${NC}"
+echo -e "${GRAY}Auto Domain from /etc/xray/domain${NC}\n"
 
-RestartZivpn() {
-  systemctl -q restart zivpn
-}
+# --- Ambil Domain (wajib ada) ---
+if [ ! -f /etc/xray/domain ]; then
+    echo -e "${RED}✗ File /etc/xray/domain tidak ditemukan.${NC}"
+    echo -e "${YELLOW}Pastikan domain sudah diset sebelum menjalankan script ini.${NC}"
+    exit 1
+fi
 
-Machine() {
-  if [[ "$(uname)" == 'Linux' ]]; then
-    case "$(uname -m)" in
-      'amd64' | 'x86_64')
-        MACHINE='amd64'
-        ;;
-      'armv5tel')
-        MACHINE='arm'
-        ;;
-      'armv8' | 'aarch64')
-        MACHINE='arm64'
-        ;;
-      *)
-        echo
-        echo "➜ error: Arsitektur ini tidak didukung."
-        echo
-        MACHINE=''
-        ;;
-    esac
-  else
-    echo
-    echo "➜ error: Sistem operasi ini tidak didukung."
-    echo
-    MACHINE=''
-  fi
-}
+domain=$(cat /etc/xray/domain)
+if [ -z "$domain" ]; then
+    echo -e "${RED}✗ Isi /etc/xray/domain kosong.${NC}"
+    exit 1
+fi
 
-AppendLine() {
-  local file="$1"
-  local text="$2"
-  
-  if ! grep -Fxq "$text" "$file"; then
-    printf '%s\n' "$text" >> "$file"
-    return 0
-  fi
+echo -e "${GREEN}✓ Domain: $domain${NC}\n"
 
-  return 1
-}
+# Variabel
+NIC=$(ip -4 route ls | grep default | grep -Po '(?<=dev )(\S+)' | head -1)
+Dir="/etc/zivpn"
+MENU_URL="https://raw.githubusercontent.com/EnzoXZodix/ZIKIR/main/zivpn-menu"
 
-Utils() {
-  case "$1" in
-    'rt') iptables -t nat -S PREROUTING | grep -w ":5667" >/dev/null 2>&1 ;;
-    'cmd') command -v "$2" >/dev/null 2>&1 ;;
-    'file') [ -f "$2" ] ;;
-    'folder') [ -d "$2" ] ;;
-    *) return 1 ;;
-  esac
-}
+# --- Instalasi ---
+run_silent "Membuat direktori /etc/zivpn" "mkdir -p $Dir"
 
-FileConfigAndCtl() {
-  cat > "$Dir/config.json" <<-END
+if systemctl is-active --quiet zivpn; then
+    run_silent "Menghentikan service zivpn lama" "systemctl stop zivpn"
+fi
+
+run_silent "Mengunduh binary Zivpn" "wget -q https://github.com/zahidbd2/udp-zivpn/releases/download/udp-zivpn_1.4.9/udp-zivpn-linux-amd64 -O /usr/local/bin/zivpn && chmod +x /usr/local/bin/zivpn"
+
+# Config JSON
+cat > "$Dir/config.json" <<-END
 {
   "listen": ":5667",
-   "cert": "$Dir/zivpn.crt",
-   "key": "$Dir/zivpn.key",
-   "obfs":"zivpn",
-   "auth": {
-    "mode": "passwords", 
+  "cert": "$Dir/zivpn.crt",
+  "key": "$Dir/zivpn.key",
+  "obfs": "zivpn",
+  "auth": {
+    "mode": "passwords",
     "config": []
   }
-}  
+}
 END
 
-  cat > /etc/systemd/system/zivpn.service <<-END
+# Generate SSL dengan CN = domain
+run_silent "Membuat SSL certificate untuk $domain" "openssl req -new -newkey rsa:4096 -days 365 -nodes -x509 -subj \"/C=ID/ST=Jawa Barat/L=Bandung/O=AutoVPS/OU=IT/CN=$domain\" -keyout $Dir/zivpn.key -out $Dir/zivpn.crt"
+
+# Systemd service
+cat > /etc/systemd/system/zivpn.service <<-END
 [Unit]
-Description=zivpn VPN Server
+Description=Zivpn VPN Server
 After=network.target
 
 [Service]
@@ -120,191 +106,34 @@ NoNewPrivileges=true
 [Install]
 WantedBy=multi-user.target
 END
-}
 
-Certificate() {
-  echo
-  openssl req -new -newkey rsa:4096 -days 365 -nodes -x509 -subj "/C=US/ST=California/L=Los Angeles/O=Example Corp/OU=IT Department/CN=zivpn" -keyout "$Dir/zivpn.key" -out "$Dir/zivpn.crt"
-  echo
-}
+run_silent "Reload systemd" "systemctl daemon-reload"
+run_silent "Enable zivpn service" "systemctl enable zivpn"
+run_silent "Start zivpn service" "systemctl start zivpn"
 
-PostKernel() {
-  AppendLine "$Sysctl" "net.core.rmem_max=16777216"
-  AppendLine "$Sysctl" "net.core.wmem_max=16777216"
-  sysctl -w net.core.rmem_max=16777216 1> /dev/null 2> /dev/null
-  sysctl -w net.core.wmem_max=16777216 1> /dev/null 2> /dev/null
-}
+# Kernel tuning
+run_silent "Optimasi kernel" "sysctl -w net.core.rmem_max=16777216 net.core.wmem_max=16777216 net.ipv4.ip_forward=1"
 
-RoutingTables() {
-  if Utils rt; then
-    iptables -t nat -D PREROUTING -i $NIC -p udp --dport 6000:19999 -j DNAT --to-destination :5667
-  fi
-  iptables -t nat -A PREROUTING -i $NIC -p udp --dport 6000:19999 -j DNAT --to-destination :5667
-}
+# Iptables NAT
+run_silent "Konfigurasi iptables NAT" "iptables -t nat -A PREROUTING -i $NIC -p udp --dport 6000:19999 -j DNAT --to-destination :5667"
 
-DownloadAndChmod() {
-  wget "https://github.com/zahidbd2/udp-zivpn/releases/download/udp-zivpn_1.4.9/udp-zivpn-linux-$MACHINE" -O /usr/local/bin/zivpn 1> /dev/null 2> /dev/null
-  chmod +x /usr/local/bin/zivpn   
-}
+# Menu tambahan (opsional)
+if command -v wget &> /dev/null; then
+    run_silent "Mengunduh menu tambahan" "wget -q $MENU_URL -O /usr/local/bin/zivpn-menu && chmod +x /usr/local/bin/zivpn-menu"
+fi
 
-Deps() {
-  if Utils file "$Dir/config.json"; then
-    BackupConfig
-  fi
-  
-  if Utils file $FileSys; then
-    systemctl -q stop zivpn
-    systemctl -q disable zivpn
-    rm -f $FileSys
-  fi
-  
-  if Utils cmd zivpn; then
-    rm -f $(command -v zivpn)
-  fi
-  
-  if Utils cmd mzivpn; then
-    rm -f $(command -v mzivpn)
-  fi
-}
+# File expired.db untuk kompatibilitas
+touch "$Dir/expired.db"
 
-ReplaceConfig() {
-  echo
-  read -rp "➜ Timpa konfigurasi lama? [y/n]: " ask
-  
-  case "$ask" in
-  [yY])
-    rm -f $FileBackup
-    cp "$Dir/config.json" $FileBackup
-    MsgFileBackup
-  ;;
-  [nN])
-    return
-  ;;
-  *)
-    ReplaceConfig
-  ;;
-  esac
-  echo
-}
+# Info akhir
+echo ""
+echo -e "${BOLD}════════════════════════════════════════${NC}"
+echo -e "${GREEN}✅ ZiVPN UDP berhasil dipasang!${NC}"
+echo -e "${BOLD}════════════════════════════════════════${NC}"
+echo -e "Domain      : ${CYAN}$domain${NC}"
+echo -e "Port UDP    : ${CYAN}6000-19999${NC} → ${CYAN}:5667${NC}"
+echo -e "Config Dir  : ${CYAN}$Dir${NC}"
+echo -e "Service     : ${CYAN}systemctl status zivpn${NC}"
+echo -e "Menu        : ${CYAN}zivpn-menu${NC} (jika diunduh)"
+echo -e "${BOLD}════════════════════════════════════════${NC}"
 
-BackupConfig() {
-  echo
-  read -rp "➜ Backup konfigurasi? [y/n]: " ask
-  
-  case "$ask" in
-  [yY])
-    if Utils file $FileBackup; then
-      ReplaceConfig
-    else
-      cp "$Dir/config.json" $FileBackup
-      MsgFileBackup
-    fi
-  ;;
-  [nN])
-    return
-  ;;
-  *)
-    BackupConfig
-  ;;
-  esac
-  echo
-}
-
-RestoreConfig() {
-  echo
-  if Utils file $FileBackup; then
-    read -rp "➜ Restore konfigurasi? [y/n]: " ask
-    
-    case "$ask" in
-    [yY])
-      rm -f "$Dir/config.json"
-      cp $FileBackup "$Dir/config.json"
-      RestartZivpn
-      echo
-      echo -e "➜ Berhasil memulihkan konfigurasi"
-      echo
-    ;;
-    [nN])
-      return
-    ;;
-    *)
-      RestoreConfig
-    ;;
-    esac
-  fi
-  echo
-}
-
-Install() {
-  Machine
-  if [ -z "$MACHINE" ]; then
-    exit 1
-  fi
-  
-  Deps
-  DownloadAndChmod
-  FileConfigAndCtl
-  Certificate
-  
-  # Buat file expired.db
-  touch "$Dir/expired.db"
-  echo -e "${GREEN}➜ File expired.db dibuat di $Dir${NC}"
-  
-  systemctl -q enable zivpn
-  systemctl -q start zivpn
-  
-  if [[ $(systemctl is-active zivpn) == 'active' ]]; then
-    PostKernel
-    RoutingTables
-    RestoreConfig
-    RestartZivpn
-    
-    # Download menu tambahan
-    echo -e "${GREEN}➜ Mengunduh File Yang Di Pelukan${NC}"
-    if command -v curl >/dev/null 2>&1; then
-      curl -s "$MENU_URL" -o /usr/local/bin/zivpn-menu
-    else
-      wget -q "$MENU_URL" -O /usr/local/bin/zivpn-menu
-    fi
-    chmod +x /usr/local/bin/zivpn-menu
-    echo -e "${GREEN}➜ Menu tersimpan di /usr/local/bin/zivpn-menu${NC}"
-    
-    echo
-    echo -e "➜ ZIVPN UDP Terpasang"
-    echo
-  else
-    MsgNotInstalled
-    # Hapus jika gagal
-    if Utils file "$FileSys"; then
-      systemctl -q stop zivpn
-      systemctl -q disable zivpn
-      rm -f $FileSys
-    fi
-    if Utils cmd zivpn; then
-      killall zivpn 1> /dev/null 2> /dev/null
-      rm -f $(command -v zivpn)
-    fi
-    if Utils folder $Dir; then
-      rm -rf $Dir
-    fi
-    MsgUninstall
-  fi
-}
-
-main() {
-  if [ $EUID -ne 0 ]; then
-    echo
-    echo -e "➜ error: Membutuhkan akses root"
-    echo
-    exit 1
-  fi
-  
-  if ! Utils folder $Dir; then
-    mkdir -p $Dir
-  fi
-  
-  # Hanya install
-  Install
-}
-
-main "$@"
